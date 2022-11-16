@@ -1,4 +1,3 @@
-// @ts-check
 import { defineStore } from "pinia";
 import authService from "../service/authService";
 
@@ -7,14 +6,10 @@ export const useAuthStore = defineStore({
   state: () => ({
     errors: null,
     user: {},
-    // Authenticated: !!jwtService.getToken(),
   }),
   getters: {
     currentUser(state) {
       return state.user;
-    },
-    isAuthenticated(state) {
-    //   return state.Authenticated;
     },
   },
   actions: {
@@ -26,13 +21,17 @@ export const useAuthStore = defineStore({
       return new Promise((resolve) => {
         authService
           .register(credintials)
-        //   .then((res) => {
-        //     console.log(res);
-        //   })
-        //   .catch(({ response }) => {
-        //     this.errors = response;
-        //   });
+          .then((res) => {
+            resolve(res);
+          })
+          .catch(({ response }) => {
+            this.errors = response;
+          });
       });
+    },
+
+    async getCurrentUser() {
+      authService.getCurrentUser();
     },
   },
 });

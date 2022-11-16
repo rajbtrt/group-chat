@@ -12,10 +12,9 @@ const goToLogin = () => {
 };
 
 const register = () => {
-  auth.register(form).then((res)=>{
-    console.log(res);
+  auth.register(form).then(()=>{
+    router.push("/chatlist");
   })
-  console.log(form)
 };
 
 const form = reactive({
@@ -27,7 +26,7 @@ const form = reactive({
 <template>
   <div class="login-container">
     <Card class="card-design">
-      <template #title> <h4 class="card-header">Sign In</h4> </template>
+      <template #title> <h4 class="card-header">Sign Up</h4> </template>
       <template #content>
         <div class="login-input">
           <InputText
