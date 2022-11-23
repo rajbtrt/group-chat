@@ -1,34 +1,66 @@
 <script setup>
-import { InputText, Card, Button } from "../components";
+import { InputText, Card, Button, Toast } from "../components";
 import { useRouter } from "vue-router";
 import { reactive } from "vue";
 import { useAuthStore } from "../store/auth";
+import { useToast } from "primevue/usetoast";
 
+const toast = useToast();
 const router = useRouter();
 const auth = useAuthStore();
+
+const form = reactive({
+  email: "",
+  password: "",
+  firstName: "",
+  lastName: "",
+  avatar: "",
+  fullName: "",
+});
 
 const goToLogin = () => {
   router.push("/login");
 };
 
 const register = () => {
-  auth.register(form).then(()=>{
-    router.push("/chatlist");
-  })
+  form.avatar =
+    Array.from(form.firstName.toUpperCase())[0] +
+    Array.from(form.lastName.toUpperCase())[0];
+  form.fullName = form.firstName + " " + form.lastName;
+  console.log(form);
+  auth.register(form).then(() => {
+    toast.add({
+      severity: "success",
+      summary: "User Register Successfully",
+      detail: "Welcome",
+      life: 3000,
+    });
+    setTimeout(() => {
+      router.push("/chatlist");
+    }, 3000);
+  });
 };
-
-const form = reactive({
-  email: "",
-  password: "",
-});
 </script>
 
 <template>
   <div class="login-container">
+    <Toast />
     <Card class="card-design">
       <template #title> <h4 class="card-header">Sign Up</h4> </template>
       <template #content>
         <div class="login-input">
+          <InputText
+            class="input-field"
+            type="text"
+            v-model="form.firstName"
+            placeholder="First Name"
+          />
+          <InputText
+            class="input-field"
+            type="text"
+            v-model="form.lastName"
+            placeholder="Last Name"
+          />
           <InputText
             class="input-field"
             type="text"
@@ -41,7 +73,12 @@ const form = reactive({
             v-model="form.password"
             placeholder="Password"
           />
-          <Button label="Register" @click="register()" icon="pi pi-check" iconPos="right" />
+          <Button
+            label="Register"
+            @click="register()"
+            icon="pi pi-check"
+            iconPos="right"
+          />
         </div>
         <span class="register-link">
           Already have an account!!
@@ -61,7 +98,7 @@ const form = reactive({
 }
 .card-design {
   padding: 25px 50px;
-  width: 42%;
+  width: 70%;
   border-radius: 20px;
 }
 .card-header {
@@ -73,7 +110,7 @@ const form = reactive({
   margin-bottom: 30px;
 }
 .input-field {
-  width: 40%;
+  width: 20%;
 }
 .register-link {
   font-size: 14px;

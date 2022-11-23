@@ -4,7 +4,6 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 const authCheck = () => {
   const auth = getAuth();
   onAuthStateChanged(auth, (user) => {
-    console.log(user)
     if (user) {
       return true;
     } else {

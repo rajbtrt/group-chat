@@ -1,15 +1,115 @@
 <script setup>
-import { InputText, Card, Button, Avatar, Divider } from "../components";
+import {
+  InputText,
+  Button,
+  Avatar,
+  Divider,
+  Dialog,
+  MultiSelect,
+  Toast,
+} from "../components";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "../store/auth";
+import { useGroupStore } from "../store/group";
+import { useUserStore } from "../store/user";
+import { useMessageStore } from "../store/message";
+import { reactive, ref, onMounted, computed } from "vue";
+import { useToast } from "primevue/usetoast";
+
+const toast = useToast();
+const router = useRouter();
+const auth = useAuthStore();
+const group = useGroupStore();
+const user = useUserStore();
+const message = useMessageStore();
+
+let chatMessage = ref("");
+const searchText = ref();
+let groupSelected = ref();
+const displayModal = ref(false);
+let form = reactive({
+  groupName: "",
+  groupMembers: [],
+  groupAdmin: "",
+  createDate: new Date().getTime(),
+});
+const getAllRoom = computed(() => group.getAllGroup);
+const getCurrentUser = computed(() => user.getCurrentUser);
+const getGroupMessages = computed(() => message.getGroupMessage);
+const userListToAddGroupMember = computed(() =>
+  user.getUserslist.filter((res) => res.uid !== getCurrentUser.value.uid)
+);
+
+const logout = () => {
+  auth.logout().then(() => {
+    router.push("/login");
+  });
+};
+
+onMounted(() => {
+  group.fetchAllGroup();
+  user.fetchAllUsers();
+  user.fetchCurrentUser();
+});
+
+const createGroup = () => {
+  getCurrentUser.value.admin = true;
+  form.groupMembers.push(getCurrentUser.value.uid);
+  console.log(form);
+  group.createGroup(form).then(() => {
+    form.groupAdmin = "";
+    form.groupName = "";
+    form.groupMembers = [];
+    form.createDate = "";
+    closeRoomDetailsPopup();
+  });
+};
+
+const addRoomDetailsPopup = () => {
+  displayModal.value = true;
+};
+
+const closeRoomDetailsPopup = () => {
+  displayModal.value = false;
+};
+
+const selectGroup = (arg) => {
+  groupSelected.value = arg;
+  message.fetchAllMessageOfGroup(groupSelected.value.id);
+  // message.getNewMessage(groupSelected.value.id);
+};
+
+const sendMessage = () => {
+  let chatDetails = {
+    messageText: chatMessage.value,
+    sentAt: new Date().getTime(),
+    sentBy: getCurrentUser.value.uid,
+  };
+  message.sendMessage(chatDetails, groupSelected.value.id).then(() => {
+    chatMessage.value = "";
+  });
+};
+
+const tp = () => {
+  console.log(getAllRoom);
+};
+
+const dateFormat = (args) => {
+  let date = new Date(args);
+  return date.getHours() + ":" + date.getMinutes();
+};
 </script>
 
 <template>
   <div>
+    <Toast />
     <div class="header">
       <img src="../assets/chat.png" height="48" alt="" />
       <Avatar
-        label="R"
+        :label="getCurrentUser.avatar"
         class="mr-2 chat-avatar"
         size="large"
+        @click="logout()"
         shape="circle"
       />
     </div>
@@ -20,54 +120,34 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
           <InputText
             class="search-field"
             type="text"
-            v-model="value1"
+            v-model="searchText"
             placeholder="Search"
+          />
+          <Button
+            icon="pi pi-plus"
+            class="add-btn"
+            @click="addRoomDetailsPopup"
           />
         </span>
 
         <!-- Chat List -->
         <div class="chat-list-container">
-          <div class="chatroom-list-item">
-            <Avatar
-              label="P"
-              class="mr-2 chat-avatar"
-              size="xlarge"
-              shape="circle"
-            />
-            <div class="chatroom-list-info">
-              <h3>Paul williams</h3>
-              <span>Hi, How are you?</span>
+          <template v-for="item in getAllRoom">
+            <div class="chatroom-list-item" @click="selectGroup(item)">
+              <Avatar
+                label="P"
+                class="mr-2 chat-avatar"
+                size="xlarge"
+                shape="circle"
+              />
+              <div class="chatroom-list-info">
+                <h3>{{ item.groupName }}</h3>
+                <span>Hi, How are you?</span>
+              </div>
+              <h3 class="chatroom-list-info-time">9:00</h3>
             </div>
-            <h3 class="chatroom-list-info-time">9:00</h3>
-          </div>
-          <Divider />
-          <div class="chatroom-list-item">
-            <Avatar
-              label="P"
-              class="mr-2 chat-avatar"
-              size="xlarge"
-              shape="circle"
-            />
-            <div class="chatroom-list-info">
-              <h3>Paul williams</h3>
-              <span>Hi, How are you?</span>
-            </div>
-            <h3 class="chatroom-list-info-time">9:00</h3>
-          </div>
-          <Divider />
-          <div class="chatroom-list-item">
-            <Avatar
-              label="P"
-              class="mr-2 chat-avatar"
-              size="xlarge"
-              shape="circle"
-            />
-            <div class="chatroom-list-info">
-              <h3>Paul williams</h3>
-              <span>Hi, How are you?</span>
-            </div>
-            <h3 class="chatroom-list-info-time">9:00</h3>
-          </div>
+            <Divider />
+          </template>
         </div>
       </div>
       <div class="chat-grid-2">
@@ -79,7 +159,7 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
             shape="circle"
           />
           <div class="chatroom-list-info">
-            <h3>Tech Community</h3>
+            <h3>{{ groupSelected?.groupName }}</h3>
             <span>Paul Williams, Adam Walker, Ion Smith</span>
           </div>
           <Button icon="pi pi-plus" class="add-btn" />
@@ -88,39 +168,90 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
 
         <div class="chatroom-container">
           <div class="chat-box-container">
-            <div class="reciever-message">
-              <div class="reciever-info">
-                <Avatar
-                  label="P"
-                  class="mr-2 chat-avatar"
-                  size="large"
-                  shape="circle"
-                />
-                <span class="message-time">9:00</span>
+            <template v-for="item in getGroupMessages">
+              <div
+                :class="[
+                  item.sentBy === getCurrentUser.uid
+                    ? 'sender-message'
+                    : 'reciever-message',
+                ]"
+              >
+                <div
+                  class="reciever-info"
+                  v-if="item.sentBy !== getCurrentUser.uid"
+                >
+                  <Avatar
+                    label="P"
+                    class="mr-2 chat-avatar"
+                    size="large"
+                    shape="circle"
+                  />
+                  <span class="message-time">{{
+                    dateFormat(item.sentAt)
+                  }}</span>
+                </div>
+                <div
+                  :class="[
+                    item.sentBy === getCurrentUser.uid
+                      ? 'sender-message-bubble'
+                      : 'reciever-message-bubble',
+                  ]"
+                >
+                  <span>{{ item.messageText }}</span>
+                </div>
               </div>
-              <div class="reciever-message-bubble">
-                <span>Hi, How are you?</span>
-              </div>
-            </div>
-            <div class="sender-message-bubble">
-              <span>Hi, I am good Thanks for asking</span>
-            </div>
-            <div class="sender-message-bubble">
-              <span>How are you?</span>
-            </div>
+            </template>
           </div>
           <div class="write-box">
             <InputText
               class="input-field"
               type="text"
-              v-model="value1"
+              v-model="chatMessage"
               placeholder="Write a message"
             />
-            <Button icon="pi pi-send" class="send-btn" />
+            <Button icon="pi pi-send" class="send-btn" @click="sendMessage()" />
           </div>
         </div>
       </div>
     </div>
+
+    <Dialog
+      header="Create New Group"
+      v-model:visible="displayModal"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
+      :style="{ width: '50vw' }"
+      :modal="true"
+    >
+      <InputText
+        class="group-name-input"
+        type="text"
+        v-model="form.groupName"
+        placeholder="Group Name"
+      />
+
+      <MultiSelect
+        v-model="form.groupMembers"
+        :options="userListToAddGroupMember"
+        optionLabel="fullName"
+        placeholder="Add Users"
+        :filter="true"
+        display="chip"
+        optionValue="uid"
+        class="group-name-input"
+      >
+      </MultiSelect>
+
+      <template #footer>
+        <Button
+          label="No"
+          icon="pi pi-times"
+          @click="closeRoomDetailsPopup"
+          class="p-button-text"
+        />
+        <Button label="Yes" icon="pi pi-check" @click="createGroup" autofocus />
+        <Button label="tp" icon="pi pi-check" @click="tp" autofocus />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -129,7 +260,7 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
   display: flex;
 }
 
-.header{
+.header {
   display: flex;
   justify-content: space-between;
   padding: 15px 30px;
@@ -175,6 +306,8 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
 }
 
 .chat-avatar {
+  cursor: pointer;
+  font-size: 1rem !important;
 }
 
 .chatroom-list-info {
@@ -195,12 +328,19 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
   display: flex;
   flex-direction: column;
   flex: 1;
+  overflow-y: auto;
+}
+
+.sender-message {
+  margin: 5px 0;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .reciever-message {
-  display: flex;
-  align-self: flex-start;
   margin: 5px 0;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .reciever-message-bubble {
@@ -209,6 +349,7 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
   padding: 20px;
   margin: 0 0 0 15px;
   border-radius: 0 15px 15px 15px;
+  width: fit-content;
 }
 
 .reciever-info {
@@ -222,10 +363,9 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
   color: #ffffff;
   height: fit-content;
   padding: 20px;
-  margin: 0 0 0 15px;
+  margin: 5px 0 5px 15px;
   border-radius: 15px 15px 0 15px;
-  align-self: flex-end;
-  margin: 5px 0;
+  width: fit-content;
 }
 
 .write-box {
@@ -259,7 +399,7 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
   border-radius: 30px;
   border: 0;
   padding: 20px 20px 20px 60px;
-  width: 100%;
+  width: 85%;
 }
 
 .chatroom-details {
@@ -285,5 +425,10 @@ import { InputText, Card, Button, Avatar, Divider } from "../components";
   border-radius: 50px;
   height: 60px;
   border: 0;
+}
+
+.group-name-input {
+  width: 100%;
+  margin-bottom: 10px;
 }
 </style>

@@ -1,21 +1,39 @@
 import { defineStore } from "pinia";
-import authService from "../service/authService";
+import groupService from "../service/groupService";
 
-export const useAuthStore = defineStore({
-  id: "auth",
+export const useGroupStore = defineStore({
+  id: "group",
   state: () => ({
     errors: null,
+    allGroup: [],
   }),
-  getters: {},
+  getters: {
+    getAllGroup(state) {
+      return state.allGroup;
+    },
+  },
   actions: {
-    /**
-     * Attempt to login a user
-     * @param {object} credintials
-     */
-    async register(credintials) {
+    async fetchAllGroup() {
+      this.allGroup = [];
       return new Promise((resolve) => {
-        authService
-          .register(credintials)
+        groupService
+          .getAllGroup()
+          .then((doc) => {
+            doc.forEach((res) => {
+              this.allGroup.push({ id: res.id, ...res.data() });
+              resolve(res);
+            });
+          })
+          .catch(({ response }) => {
+            this.errors = response;
+          });
+      });
+    },
+
+    async createGroup(groupDetails) {
+      return new Promise((resolve) => {
+        groupService
+          .createGroup(groupDetails)
           .then((res) => {
             resolve(res);
           })
@@ -25,23 +43,10 @@ export const useAuthStore = defineStore({
       });
     },
 
-    async login(credintials) {
+    async deleteRoom(groupID) {
       return new Promise((resolve) => {
-        authService
-          .login(credintials)
-          .then((res) => {
-            resolve(res);
-          })
-          .catch(({ response }) => {
-            this.errors = response;
-          });
-      });
-    },
-
-    async logout() {
-      return new Promise((resolve) => {
-        authService
-          .signOut()
+        groupService
+          .deleteRoom(groupID)
           .then((res) => {
             resolve(res);
           })

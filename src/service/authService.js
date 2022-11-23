@@ -2,6 +2,8 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
 import { firebaseInitConfig } from "../helpers/firebaseConfig";
 import { collection, doc, setDoc, getFirestore } from "firebase/firestore";
@@ -18,10 +20,9 @@ export default {
     )
       .then((userCredintials) => {
         let uid = userCredintials.user.uid;
+        credintials.uid = userCredintials.user.uid;
         try {
-          return setDoc(doc(db, "users", uid), {
-            email: credintials.email,
-          }).then((res) => {
+          return setDoc(doc(db, "users", uid), credintials).then((res) => {
             return "user registerd";
           });
         } catch (err) {
@@ -34,14 +35,31 @@ export default {
       });
   },
 
-  getCurrentUser() {
+  // Register
+  login(credintials) {
     const auth = getAuth();
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        return user;
-      } else {
-        return {};
-      }
-    });
+    return signInWithEmailAndPassword(
+      auth,
+      credintials.email,
+      credintials.password
+    )
+      .then(() => {
+        return "User Logged in";
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+      });
+  },
+
+  signOut() {
+    const auth = getAuth();
+    return signOut(auth)
+      .then(() => {
+        return "User Logged out";
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   },
 };
