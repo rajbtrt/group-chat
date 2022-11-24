@@ -1,19 +1,7 @@
 import { defineStore } from "pinia";
 import { firebaseInitConfig } from "../helpers/firebaseConfig";
 import messageService from "../service/messageService";
-import {
-  collection,
-  doc,
-  setDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  getFirestore,
-  onSnapshot,
-  getDocs,
-  orderBy,
-  getDoc,
-} from "firebase/firestore";
+import { collection, getFirestore, onSnapshot } from "firebase/firestore";
 const db = getFirestore(firebaseInitConfig);
 
 export const useMessageStore = defineStore({
@@ -33,7 +21,6 @@ export const useMessageStore = defineStore({
         messageService
           .getAllMessageOfGroup(groupID)
           .then((doc) => {
-            console.log(doc);
             doc.forEach((res) => {
               this.groupMessage.push({ id: res.id, ...res.data() });
               resolve(res);
@@ -58,21 +45,17 @@ export const useMessageStore = defineStore({
       });
     },
 
-    // async getNewMessage(groupID) {
-    //   const q = collection(
-    //     db,
-    //     "messages",
-    //     groupID,
-    //     "message",
-    //     orderBy("sentAt")
-    //   );
-    //   return new Promise((resolve) => {
-    //     onSnapshot(q, (querySnapshot) => {
-    //       querySnapshot.forEach((doc) => {
-    //         console.log(doc);
-    //       });
-    //     });
-    //   });
-    // },
+    async getNewMessage(groupID) {
+      const q = collection(db, "messages", groupID, "message");
+      return new Promise((resolve) => {
+        onSnapshot(q, (querySnapshot) => {
+          if (querySnapshot.docChanges().length <= 1) {
+            querySnapshot.docChanges().forEach((res) => {
+              this.groupMessage.push({ id: res.doc.id, ...res.doc.data() });
+            });
+          }
+        });
+      });
+    },
   },
 });

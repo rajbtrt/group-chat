@@ -76,7 +76,7 @@ const closeRoomDetailsPopup = () => {
 const selectGroup = (arg) => {
   groupSelected.value = arg;
   message.fetchAllMessageOfGroup(groupSelected.value.id);
-  // message.getNewMessage(groupSelected.value.id);
+  message.getNewMessage(groupSelected.value.id);
 };
 
 const sendMessage = () => {
