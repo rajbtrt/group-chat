@@ -11,6 +11,8 @@ import {
   onSnapshot,
   getDocs,
   getDoc,
+  query,
+  where,
 } from "firebase/firestore";
 const db = getFirestore(firebaseInitConfig);
 
@@ -20,15 +22,11 @@ export default {
     return getDocs(collection(db, "users"));
   },
 
-  // // Get Specific user
-  // getUser() {
-  //   const docSnap = getDoc(doc(db, "users", "mepU9STK7nZcw6kDmTMfhMkLu882"));
-  //   if (docSnap.exists()) {
-  //     console.log("Document data:", docSnap.data());
-  //   } else {
-  //     console.log("No such document!");
-  //   }
-  // },
+  // Get Specific user
+  getUser(userID) {
+    const q = query(collection(db, "users"), where("uid", "in", userID));
+    return getDocs(q);
+  },
 
   // Get Current Logged In User
   async getCurrentUser() {

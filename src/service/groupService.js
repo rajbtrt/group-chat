@@ -30,12 +30,11 @@ export default {
   },
 
   getGroup() {
-    const docSnap = getDoc(doc(db, "chatroom", "kQ5LpdrLBIdkA6o8fpBV"));
-    if (docSnap.exists()) {
-      console.log("Document data:", docSnap.data());
-    } else {
-      console.log("No such document!");
-    }
+    const q = query(
+      collection(db, "chatroom"),
+      where("uidgroupMembers", "array-contains", "2kQspY88uDViSTzmXqOZqfF1cqt2")
+    );
+    return getDocs(q);
   },
 
   // Update Group Details

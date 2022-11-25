@@ -7,6 +7,7 @@ export const useUserStore = defineStore({
     errors: null,
     usersList: [],
     currentUser: "",
+    groupMembersDetails: [],
   }),
   getters: {
     getUserslist(state) {
@@ -14,6 +15,9 @@ export const useUserStore = defineStore({
     },
     getCurrentUser(state) {
       return state.currentUser;
+    },
+    getGroupMembersDetails(state) {
+      return state.groupMembersDetails;
     },
   },
   actions: {
@@ -24,6 +28,22 @@ export const useUserStore = defineStore({
           .then((doc) => {
             doc.forEach((res) => {
               this.usersList.push(res.data());
+              resolve(res);
+            });
+          })
+          .catch(({ response }) => {
+            this.errors = response;
+          });
+      });
+    },
+
+    async fetchUser(userID) {
+      return new Promise((resolve) => {
+        userService
+          .getUser(userID)
+          .then((doc) => {
+            doc.forEach((res) => {
+              this.groupMembersDetails.push(res.data());
               resolve(res);
             });
           })

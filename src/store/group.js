@@ -30,6 +30,23 @@ export const useGroupStore = defineStore({
       });
     },
 
+    async fetchGroup(userID) {
+      return new Promise((resolve) => {
+        groupService
+          .getGroup(userID)
+          .then((doc) => {
+            doc.forEach((res) => {
+              console.log(res);
+              // this.groupMembersDetails.push(res.data());
+              resolve(res);
+            });
+          })
+          .catch(({ response }) => {
+            this.errors = response;
+          });
+      });
+    },
+
     async createGroup(groupDetails) {
       return new Promise((resolve) => {
         groupService

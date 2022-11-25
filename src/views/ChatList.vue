@@ -33,9 +33,11 @@ let form = reactive({
   groupAdmin: "",
   createDate: new Date().getTime(),
 });
+let groupMemberName = ref();
 const getAllRoom = computed(() => group.getAllGroup);
 const getCurrentUser = computed(() => user.getCurrentUser);
 const getGroupMessages = computed(() => message.getGroupMessage);
+const getGroupMemebers = computed(() => user.getGroupMembersDetails);
 const userListToAddGroupMember = computed(() =>
   user.getUserslist.filter((res) => res.uid !== getCurrentUser.value.uid)
 );
@@ -73,10 +75,18 @@ const closeRoomDetailsPopup = () => {
   displayModal.value = false;
 };
 
+const getGroupDetails = () => {
+  user.fetchUser(groupSelected.value.groupMembers).then(() => {
+    groupMemberName.value = getGroupMemebers.value.map((res) => res.fullName).join();
+    console.log(groupMemberName);
+  });
+};
+
 const selectGroup = (arg) => {
   groupSelected.value = arg;
   message.fetchAllMessageOfGroup(groupSelected.value.id);
   message.getNewMessage(groupSelected.value.id);
+  getGroupDetails();
 };
 
 const sendMessage = () => {
@@ -97,6 +107,14 @@ const tp = () => {
 const dateFormat = (args) => {
   let date = new Date(args);
   return date.getHours() + ":" + date.getMinutes();
+};
+
+const getMessageAvatar = (id) => {
+  let user = getGroupMemebers.value.filter((res) => res.uid === id);
+  let avatar = user.map((res) => {
+    return res.avatar;
+  });
+  return avatar.find((res) => res);
 };
 </script>
 
@@ -160,7 +178,7 @@ const dateFormat = (args) => {
           />
           <div class="chatroom-list-info">
             <h3>{{ groupSelected?.groupName }}</h3>
-            <span>Paul Williams, Adam Walker, Ion Smith</span>
+            <span>{{ groupMemberName }}</span>
           </div>
           <Button icon="pi pi-plus" class="add-btn" />
           <Button icon="pi pi-sign-out" class="remove-btn" />
@@ -181,7 +199,7 @@ const dateFormat = (args) => {
                   v-if="item.sentBy !== getCurrentUser.uid"
                 >
                   <Avatar
-                    label="P"
+                    :label="getMessageAvatar(item.sentBy)"
                     class="mr-2 chat-avatar"
                     size="large"
                     shape="circle"
