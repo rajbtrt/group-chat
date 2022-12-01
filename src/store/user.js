@@ -38,6 +38,7 @@ export const useUserStore = defineStore({
     },
 
     async fetchUser(userID) {
+      this.groupMembersDetails = [];
       return new Promise((resolve) => {
         userService
           .getUser(userID)

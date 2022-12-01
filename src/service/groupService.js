@@ -9,6 +9,9 @@ import {
   getFirestore,
   onSnapshot,
   getDocs,
+  query,
+  where,
+  arrayUnion,
 } from "firebase/firestore";
 const db = getFirestore(firebaseInitConfig);
 
@@ -24,6 +27,19 @@ export default {
       });
   },
 
+  joinGroup(groupCode, currentUser) {
+    getDocs(
+      query(collection(db, "chatroom"), where("groupCode", "==", groupCode))
+    ).then((res) => {
+      res.forEach((response) => {
+        const washingtonRef = doc(db, "chatroom", response.id);
+        updateDoc(washingtonRef, {
+          groupMembers: arrayUnion(currentUser),
+        });
+      });
+    });
+  },
+
   // Get All Rooms
   getAllGroup() {
     return getDocs(collection(db, "chatroom"));
@@ -32,7 +48,7 @@ export default {
   getGroup() {
     const q = query(
       collection(db, "chatroom"),
-      where("uidgroupMembers", "array-contains", "2kQspY88uDViSTzmXqOZqfF1cqt2")
+      where("groupMembers", "array-contains", "2kQspY88uDViSTzmXqOZqfF1cqt2")
     );
     return getDocs(q);
   },

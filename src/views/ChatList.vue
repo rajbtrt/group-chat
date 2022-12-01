@@ -7,6 +7,7 @@ import {
   Dialog,
   MultiSelect,
   Toast,
+  Menu,
 } from "../components";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../store/auth";
@@ -23,24 +24,34 @@ const group = useGroupStore();
 const user = useUserStore();
 const message = useMessageStore();
 
+const menu = ref();
 let chatMessage = ref("");
 const searchText = ref();
 let groupSelected = ref();
-const displayModal = ref(false);
+const displayCreateGroupModal = ref(false);
+const displayJoinGroupModel = ref(false);
 let form = reactive({
   groupName: "",
   groupMembers: [],
   groupAdmin: "",
   createDate: new Date().getTime(),
+  groupCode: "",
 });
+let groupCode = ref("");
 let groupMemberName = ref();
 const getAllRoom = computed(() => group.getAllGroup);
 const getCurrentUser = computed(() => user.getCurrentUser);
-const getGroupMessages = computed(() => message.getGroupMessage);
+const getGroupMessages = computed(() => message.getGroupMessage.reverse());
 const getGroupMemebers = computed(() => user.getGroupMembersDetails);
 const userListToAddGroupMember = computed(() =>
   user.getUserslist.filter((res) => res.uid !== getCurrentUser.value.uid)
 );
+
+const loading = ref([false, false, false]);
+const load = (index) => {
+  loading.value[index] = true;
+  setTimeout(() => (loading.value[index] = false), 1000);
+};
 
 const logout = () => {
   auth.logout().then(() => {
@@ -49,36 +60,82 @@ const logout = () => {
 };
 
 onMounted(() => {
-  group.fetchAllGroup();
+  // group.fetchAllGroup();
+  group.fetchGroup();
   user.fetchAllUsers();
   user.fetchCurrentUser();
 });
 
+const items = ref([
+  {
+    label: "Create Group",
+    icon: "pi pi-plus",
+    command: () => {
+      createGroupPopup();
+    },
+  },
+  {
+    label: "Join",
+    icon: "pi pi-user-plus",
+    command: () => {
+      joinGroupPopup();
+    },
+  },
+]);
+
+const toggle = (event) => {
+  menu.value.toggle(event);
+};
+
+const makeid = (length) => {
+  var result = "";
+  var characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  var charactersLength = characters.length;
+  for (var i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+};
+
 const createGroup = () => {
   getCurrentUser.value.admin = true;
+  form.groupCode = makeid(10);
   form.groupMembers.push(getCurrentUser.value.uid);
-  console.log(form);
   group.createGroup(form).then(() => {
     form.groupAdmin = "";
     form.groupName = "";
     form.groupMembers = [];
     form.createDate = "";
-    closeRoomDetailsPopup();
+    closeCreateGroupPopup();
   });
 };
 
-const addRoomDetailsPopup = () => {
-  displayModal.value = true;
+const joinGroup = () => {
+  group.joinGroup(groupCode.value, getCurrentUser.value.uid);
 };
 
-const closeRoomDetailsPopup = () => {
-  displayModal.value = false;
+const createGroupPopup = () => {
+  displayCreateGroupModal.value = true;
+};
+
+const closeCreateGroupPopup = () => {
+  displayCreateGroupModal.value = false;
+};
+
+const joinGroupPopup = () => {
+  displayJoinGroupModel.value = true;
+};
+
+const closeJoinGroupPopup = () => {
+  displayJoinGroupModel.value = false;
 };
 
 const getGroupDetails = () => {
   user.fetchUser(groupSelected.value.groupMembers).then(() => {
-    groupMemberName.value = getGroupMemebers.value.map((res) => res.fullName).join();
-    console.log(groupMemberName);
+    groupMemberName.value = getGroupMemebers.value
+      .map((res) => res.fullName)
+      .join();
   });
 };
 
@@ -141,11 +198,9 @@ const getMessageAvatar = (id) => {
             v-model="searchText"
             placeholder="Search"
           />
-          <Button
-            icon="pi pi-plus"
-            class="add-btn"
-            @click="addRoomDetailsPopup"
-          />
+          <!-- @click="addRoomDetailsPopup" -->
+          <Button icon="pi pi-ellipsis-v" class="add-btn" @click="toggle" />
+          <Menu id="overlay_menu" ref="menu" :model="items" :popup="true" />
         </span>
 
         <!-- Chat List -->
@@ -168,7 +223,7 @@ const getMessageAvatar = (id) => {
           </template>
         </div>
       </div>
-      <div class="chat-grid-2">
+      <div v-if="groupSelected" class="chat-grid-2">
         <div class="chatroom-details">
           <Avatar
             label="TC"
@@ -177,14 +232,24 @@ const getMessageAvatar = (id) => {
             shape="circle"
           />
           <div class="chatroom-list-info">
-            <h3>{{ groupSelected?.groupName }}</h3>
+            <h3>
+              {{ groupSelected?.groupName }} {{ groupSelected?.groupCode }}
+            </h3>
             <span>{{ groupMemberName }}</span>
           </div>
           <Button icon="pi pi-plus" class="add-btn" />
-          <Button icon="pi pi-sign-out" class="remove-btn" />
+          <!-- <Button icon="pi pi-sign-out" class="remove-btn" /> -->
         </div>
 
         <div class="chatroom-container">
+          <Button
+            type="button"
+            label="Load messages"
+            icon="pi pi-arrow-up"
+            :loading="loading[0]"
+            @click="load(0)"
+            class="p-button-sm load-msg-btn"
+          />
           <div class="chat-box-container">
             <template v-for="item in getGroupMessages">
               <div
@@ -231,11 +296,15 @@ const getMessageAvatar = (id) => {
           </div>
         </div>
       </div>
+      <div v-else class="chat-grid-2-empty">
+        <h4>Please select group</h4>
+      </div>
     </div>
 
+    <!-- Create Group Dialog -->
     <Dialog
       header="Create New Group"
-      v-model:visible="displayModal"
+      v-model:visible="displayCreateGroupModal"
       :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
       :style="{ width: '50vw' }"
       :modal="true"
@@ -263,11 +332,37 @@ const getMessageAvatar = (id) => {
         <Button
           label="No"
           icon="pi pi-times"
-          @click="closeRoomDetailsPopup"
+          @click="closeCreateGroupPopup"
           class="p-button-text"
         />
         <Button label="Yes" icon="pi pi-check" @click="createGroup" autofocus />
         <Button label="tp" icon="pi pi-check" @click="tp" autofocus />
+      </template>
+    </Dialog>
+
+    <!-- Join Group Dialog -->
+    <Dialog
+      header="Join Group"
+      v-model:visible="displayJoinGroupModel"
+      :breakpoints="{ '960px': '75vw', '640px': '90vw' }"
+      :style="{ width: '50vw' }"
+      :modal="true"
+    >
+      <InputText
+        class="group-name-input"
+        type="text"
+        v-model="groupCode"
+        placeholder="Please Enter group code"
+      />
+
+      <template #footer>
+        <Button
+          label="No"
+          icon="pi pi-times"
+          @click="closeJoinGroupPopup"
+          class="p-button-text"
+        />
+        <Button label="Yes" icon="pi pi-check" @click="joinGroup" autofocus />
       </template>
     </Dialog>
   </div>
@@ -293,10 +388,38 @@ const getMessageAvatar = (id) => {
   height: 100%;
 }
 
+.chat-grid-2-empty {
+  flex: 3;
+  margin: 20px;
+  background-color: #ffffff;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .chat-list-container {
   margin: 20px;
   background-color: #ffffff;
   border-radius: 20px;
+  overflow-y: auto;
+  height: 77vh;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f6f7fb;
+  margin: 20px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #4e426d;
+  border-radius: 20px;
+  border: 3px solid #4e426d;
 }
 
 .chat-list-container > div:first-child {
@@ -347,6 +470,13 @@ const getMessageAvatar = (id) => {
   flex-direction: column;
   flex: 1;
   overflow-y: auto;
+}
+
+.load-msg-btn {
+  width: 14%;
+  align-self: center;
+  background-color: #4e426d;
+  border-radius: 25px;
 }
 
 .sender-message {

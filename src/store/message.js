@@ -17,6 +17,7 @@ export const useMessageStore = defineStore({
   },
   actions: {
     async fetchAllMessageOfGroup(groupID) {
+      this.groupMessage = [];
       return new Promise((resolve) => {
         messageService
           .getAllMessageOfGroup(groupID)

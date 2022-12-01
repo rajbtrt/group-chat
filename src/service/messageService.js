@@ -11,6 +11,7 @@ import {
   getDocs,
   orderBy,
   query,
+  limit
 } from "firebase/firestore";
 const db = getFirestore(firebaseInitConfig);
 
@@ -29,9 +30,13 @@ export default {
   },
 
   getAllMessageOfGroup(groupID) {
+    // const q = query(
+    //   collection(db, "messages", groupID, "message"),
+    //   orderBy("sentAt")
+    // );
     const q = query(
       collection(db, "messages", groupID, "message"),
-      orderBy("sentAt")
+      orderBy("sentAt" , "desc"), limit(10)
     );
     return new Promise((resolve) => {
       onSnapshot(q, (querySnapshot) => {

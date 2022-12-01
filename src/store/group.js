@@ -36,8 +36,7 @@ export const useGroupStore = defineStore({
           .getGroup(userID)
           .then((doc) => {
             doc.forEach((res) => {
-              console.log(res);
-              // this.groupMembersDetails.push(res.data());
+              this.allGroup.push({ id: res.id, ...res.data() });
               resolve(res);
             });
           })
@@ -64,6 +63,19 @@ export const useGroupStore = defineStore({
       return new Promise((resolve) => {
         groupService
           .deleteRoom(groupID)
+          .then((res) => {
+            resolve(res);
+          })
+          .catch(({ response }) => {
+            this.errors = response;
+          });
+      });
+    },
+
+    async joinGroup(groupCode, userID) {
+      return new Promise((resolve) => {
+        groupService
+          .joinGroup(groupCode, userID)
           .then((res) => {
             resolve(res);
           })
