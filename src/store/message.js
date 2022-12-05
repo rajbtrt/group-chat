@@ -17,7 +17,11 @@ export const useMessageStore = defineStore({
   getters: {
     getGroupMessage(state) {
       state.groupMessage.map((res) => {
-        if (res.type === "video/mp4" || res.type === "image/png" || res.type === "audio/mpeg") {
+        if (
+          res.type === "video/mp4" ||
+          res.type === "image/png" ||
+          res.type === "audio/mpeg"
+        ) {
           getDownloadURL(fbRef(storage, res.messageText)).then((url) => {
             res.messageText = url;
           });
@@ -70,13 +74,12 @@ export const useMessageStore = defineStore({
       });
     },
 
-    async getLoadMessage(groupID) {
+    async getLoadMessage(groupID, lastMsgID) {
       return new Promise((resolve) => {
         messageService
-          .getLoaderMessages(groupID)
+          .getLoaderMessages(groupID, lastMsgID)
           .then((doc) => {
             doc.forEach((res) => {
-              console.log(res.data());
               this.groupMessage.push({ id: res.id, ...res.data() });
               resolve(res);
             });

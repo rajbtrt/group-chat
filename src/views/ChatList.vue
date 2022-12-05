@@ -43,7 +43,7 @@ let groupCode = ref("");
 let groupMemberName = ref();
 const getAllRoom = computed(() => group.getAllGroup);
 const getCurrentUser = computed(() => user.getCurrentUser);
-const getGroupMessages = computed(() => message.getGroupMessage.reverse());
+const getGroupMessages = computed(() => message.getGroupMessage);
 const getGroupMemebers = computed(() => user.getGroupMembersDetails);
 const userListToAddGroupMember = computed(() =>
   user.getUserslist.filter((res) => res.uid !== getCurrentUser.value.uid)
@@ -201,11 +201,7 @@ const getMessageAvatar = (id) => {
 };
 
 const loadNewMessage = (arg) => {
-  message.getLoadMessage(arg.id);
-};
-
-const onUpload = () => {
-  console.log("upload");
+  message.getLoadMessage(arg.id, getGroupMessages.value.slice(-1)[0].id);
 };
 
 const onSelectedFiles = (event) => {
@@ -302,7 +298,7 @@ const openInTab = (args) => {
             label="Load messages"
             icon="pi pi-arrow-up"
             :loading="loading[0]"
-            @click="loadNewMessage(groupSelected)"
+            @click="loadNewMessage(groupSelected, getGroupMessages)"
             class="p-button-sm load-msg-btn"
           />
           <div class="chat-box-container">
@@ -595,7 +591,7 @@ const openInTab = (args) => {
 
 .chat-box-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   flex: 1;
   overflow-y: auto;
 }

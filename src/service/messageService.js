@@ -8,6 +8,7 @@ import {
   deleteDoc,
   getFirestore,
   onSnapshot,
+  getDoc,
   getDocs,
   orderBy,
   query,
@@ -48,15 +49,12 @@ export default {
     });
   },
 
-  async getLoaderMessages(groupID) {
+  async getLoaderMessages(groupID, lastMsgID) {
     let lastVisible = "";
-    const first = query(
-      collection(db, "messages", groupID, "message"),
-      orderBy("sentAt", "desc"),
-      limit(10)
-    );
-    await getDocs(first).then((res) => {
-      lastVisible = res.docs[res.docs.length - 1];
+    const first = doc(db, "messages", groupID, "message", lastMsgID);
+    await getDoc(first).then((res) => {
+      console.log(res);
+      lastVisible = res;
     });
     return getDocs(
       query(
