@@ -8,6 +8,8 @@ import {
   MultiSelect,
   Toast,
   Menu,
+  FileUpload,
+  SpeedDial,
 } from "../components";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../store/auth";
@@ -52,6 +54,30 @@ const load = (index) => {
   loading.value[index] = true;
   setTimeout(() => (loading.value[index] = false), 1000);
 };
+
+const fileUploadBtn = ref([
+  {
+    label: "Image",
+    icon: "pi pi-camera",
+    command: () => {
+      onSelectedFiles("image");
+    },
+  },
+  {
+    label: "Video",
+    icon: "pi pi-play",
+    command: () => {
+      onSelectedFiles("video");
+    },
+  },
+  {
+    label: "Audio",
+    icon: "pi pi-volume-up",
+    command: () => {
+      onSelectedFiles("audio");
+    },
+  },
+]);
 
 const logout = () => {
   auth.logout().then(() => {
@@ -173,6 +199,35 @@ const getMessageAvatar = (id) => {
   });
   return avatar.find((res) => res);
 };
+
+const loadNewMessage = (arg) => {
+  message.getLoadMessage(arg.id);
+};
+
+const onUpload = () => {
+  console.log("upload");
+};
+
+const onSelectedFiles = (event) => {
+  event.files.forEach((file) => {
+    message.UploadImage(file).then((res) => {
+      console.log(res);
+      let chatDetails = {
+        messageText: res.metadata.fullPath,
+        sentAt: new Date().getTime(),
+        sentBy: getCurrentUser.value.uid,
+        type: res.metadata.contentType,
+      };
+      message.sendMessage(chatDetails, groupSelected.value.id).then(() => {
+        chatMessage.value = "";
+      });
+    });
+  });
+};
+
+const openInTab = (args) => {
+  window.open(args, "_blank");
+};
 </script>
 
 <template>
@@ -247,7 +302,7 @@ const getMessageAvatar = (id) => {
             label="Load messages"
             icon="pi pi-arrow-up"
             :loading="loading[0]"
-            @click="load(0)"
+            @click="loadNewMessage(groupSelected)"
             class="p-button-sm load-msg-btn"
           />
           <div class="chat-box-container">
@@ -273,7 +328,62 @@ const getMessageAvatar = (id) => {
                     dateFormat(item.sentAt)
                   }}</span>
                 </div>
+                <!-- Image -->
                 <div
+                  :class="[
+                    item.sentBy === getCurrentUser.uid
+                      ? 'sender-message-bubble'
+                      : 'reciever-message-bubble',
+                  ]"
+                  v-if="item.type === 'image/png'"
+                  @click="openInTab(item.messageText)"
+                >
+                  <img :src="item.messageText" height="200" alt="" />
+                </div>
+
+                <!-- Video -->
+                <div
+                  :class="[
+                    item.sentBy === getCurrentUser.uid
+                      ? 'sender-message-bubble'
+                      : 'reciever-message-bubble',
+                  ]"
+                  v-else-if="item.type === 'video/mp4'"
+                  @click="openInTab(item.messageText)"
+                >
+                  <video
+                    width="320"
+                    height="240"
+                    poster="../assets/play.png"
+                    controls
+                  >
+                    <source :src="item.messageText" type="video/mp4" />
+                  </video>
+                </div>
+
+                <!-- Audio -->
+                <div
+                  :class="[
+                    item.sentBy === getCurrentUser.uid
+                      ? 'sender-message-bubble'
+                      : 'reciever-message-bubble',
+                  ]"
+                  v-else-if="item.type === 'audio/mpeg'"
+                  @click="openInTab(item.messageText)"
+                >
+                  <audio
+                    width="320"
+                    height="240"
+                    poster="../assets/play.png"
+                    controls
+                  >
+                    <source :src="item.messageText" type="audio/mpeg" />
+                  </audio>
+                </div>
+
+                <!-- Message -->
+                <div
+                  v-else
                   :class="[
                     item.sentBy === getCurrentUser.uid
                       ? 'sender-message-bubble'
@@ -292,7 +402,22 @@ const getMessageAvatar = (id) => {
               v-model="chatMessage"
               placeholder="Write a message"
             />
-            <Button icon="pi pi-send" class="send-btn" @click="sendMessage()" />
+            <div class="action">
+              <FileUpload
+                mode="basic"
+                @upload="onUpload"
+                icon="pi pi-paperclip"
+                class="send-btn"
+                @select="onSelectedFiles"
+                fileLimit="1"
+              >
+              </FileUpload>
+              <Button
+                icon="pi pi-send"
+                class="send-btn"
+                @click="sendMessage()"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -369,6 +494,9 @@ const getMessageAvatar = (id) => {
 </template>
 
 <style scoped>
+.action {
+  display: flex;
+}
 .chat-layout {
   display: flex;
 }
@@ -519,11 +647,17 @@ const getMessageAvatar = (id) => {
 .write-box {
   display: flex;
   margin: 15px 0;
+  position: relative;
 }
 
 .input-field {
   flex: 1;
   border-radius: 30px;
+}
+
+.file-btn {
+  right: 100px !important;
+  bottom: 0 !important;
 }
 
 .send-btn {

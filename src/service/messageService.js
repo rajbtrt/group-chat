@@ -11,8 +11,10 @@ import {
   getDocs,
   orderBy,
   query,
-  limit
+  limit,
+  startAfter,
 } from "firebase/firestore";
+import { getStorage, ref, uploadBytes } from "firebase/storage";
 const db = getFirestore(firebaseInitConfig);
 
 export default {
@@ -36,12 +38,41 @@ export default {
     // );
     const q = query(
       collection(db, "messages", groupID, "message"),
-      orderBy("sentAt" , "desc"), limit(10)
+      orderBy("sentAt", "desc"),
+      limit(10)
     );
     return new Promise((resolve) => {
       onSnapshot(q, (querySnapshot) => {
         resolve(querySnapshot);
       });
+    });
+  },
+
+  async getLoaderMessages(groupID) {
+    let lastVisible = "";
+    const first = query(
+      collection(db, "messages", groupID, "message"),
+      orderBy("sentAt", "desc"),
+      limit(10)
+    );
+    await getDocs(first).then((res) => {
+      lastVisible = res.docs[res.docs.length - 1];
+    });
+    return getDocs(
+      query(
+        collection(db, "messages", groupID, "message"),
+        orderBy("sentAt", "desc"),
+        startAfter(lastVisible),
+        limit(10)
+      )
+    );
+  },
+
+  uploadFile(file) {
+    const storage = getStorage();
+    const storageRef = ref(storage, `images/${file.name}`);
+    return uploadBytes(storageRef, file).then((snapshot) => {
+      return snapshot;
     });
   },
 };

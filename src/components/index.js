@@ -7,6 +7,8 @@ import Dialog from "primevue/dialog";
 import MultiSelect from "primevue/multiselect";
 import Toast from "primevue/toast";
 import Menu from "primevue/menu";
+import FileUpload from "primevue/fileupload";
+import SpeedDial from "primevue/speeddial";
 
 export {
   InputText,
@@ -18,4 +20,6 @@ export {
   MultiSelect,
   Toast,
   Menu,
+  FileUpload,
+  SpeedDial,
 };
