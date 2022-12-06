@@ -178,8 +178,8 @@ const sendMessage = () => {
     sentAt: new Date().getTime(),
     sentBy: getCurrentUser.value.uid,
   };
+  chatMessage.value = "";
   message.sendMessage(chatDetails, groupSelected.value.id).then(() => {
-    chatMessage.value = "";
   });
 };
 
@@ -401,11 +401,9 @@ const openInTab = (args) => {
             <div class="action">
               <FileUpload
                 mode="basic"
-                @upload="onUpload"
                 icon="pi pi-paperclip"
                 class="send-btn"
                 @select="onSelectedFiles"
-                fileLimit="1"
               >
               </FileUpload>
               <Button

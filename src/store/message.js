@@ -67,7 +67,9 @@ export const useMessageStore = defineStore({
         onSnapshot(q, (querySnapshot) => {
           if (querySnapshot.docChanges().length <= 1) {
             querySnapshot.docChanges().forEach((res) => {
-              this.groupMessage.push({ id: res.doc.id, ...res.doc.data() });
+              console.log(this.groupMessage)
+              this.groupMessage.unshift({ id: res.doc.id, ...res.doc.data() });
+              console.log(this.groupMessage)
             });
           }
         });
