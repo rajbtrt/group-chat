@@ -28,7 +28,7 @@ export default {
   },
 
   joinGroup(groupCode, currentUser) {
-    getDocs(
+    return getDocs(
       query(collection(db, "chatroom"), where("groupCode", "==", groupCode))
     ).then((res) => {
       res.forEach((response) => {
@@ -45,10 +45,10 @@ export default {
     return getDocs(collection(db, "chatroom"));
   },
 
-  getGroup() {
+  getGroup(userID) {
     const q = query(
       collection(db, "chatroom"),
-      where("groupMembers", "array-contains", "2kQspY88uDViSTzmXqOZqfF1cqt2")
+      where("groupMembers", "array-contains", userID)
     );
     return getDocs(q);
   },

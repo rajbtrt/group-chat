@@ -26,6 +26,8 @@ const group = useGroupStore();
 const user = useUserStore();
 const message = useMessageStore();
 
+const attachementLoad = ref(false);
+const fileInput = ref();
 const menu = ref();
 let chatMessage = ref("");
 const searchText = ref();
@@ -87,9 +89,10 @@ const logout = () => {
 
 onMounted(() => {
   // group.fetchAllGroup();
-  group.fetchGroup();
+  user.fetchCurrentUser().then(() => {
+    group.fetchGroup(getCurrentUser.value.uid);
+  });
   user.fetchAllUsers();
-  user.fetchCurrentUser();
 });
 
 const items = ref([
@@ -138,7 +141,9 @@ const createGroup = () => {
 };
 
 const joinGroup = () => {
-  group.joinGroup(groupCode.value, getCurrentUser.value.uid);
+  group.joinGroup(groupCode.value, getCurrentUser.value.uid).then(() => {
+    closeJoinGroupPopup();
+  }); 
 };
 
 const createGroupPopup = () => {
@@ -179,8 +184,7 @@ const sendMessage = () => {
     sentBy: getCurrentUser.value.uid,
   };
   chatMessage.value = "";
-  message.sendMessage(chatDetails, groupSelected.value.id).then(() => {
-  });
+  message.sendMessage(chatDetails, groupSelected.value.id).then(() => {});
 };
 
 const tp = () => {
@@ -204,20 +208,26 @@ const loadNewMessage = (arg) => {
   message.getLoadMessage(arg.id, getGroupMessages.value.slice(-1)[0].id);
 };
 
+const uploadAttachment = (args) => {
+  fileInput.value.click();
+  attachementLoad.value = true;
+};
+
 const onSelectedFiles = (event) => {
-  event.files.forEach((file) => {
-    message.UploadImage(file).then((res) => {
-      console.log(res);
-      let chatDetails = {
-        messageText: res.metadata.fullPath,
-        sentAt: new Date().getTime(),
-        sentBy: getCurrentUser.value.uid,
-        type: res.metadata.contentType,
-      };
-      message.sendMessage(chatDetails, groupSelected.value.id).then(() => {
-        chatMessage.value = "";
-      });
+  console.log(event.target.files);
+  // event.target.files.forEach((file) => {
+  message.UploadImage(event.target.files[0]).then((res) => {
+    let chatDetails = {
+      messageText: res.metadata.fullPath,
+      sentAt: new Date().getTime(),
+      sentBy: getCurrentUser.value.uid,
+      type: res.metadata.contentType,
+    };
+    message.sendMessage(chatDetails, groupSelected.value.id).then(() => {
+      chatMessage.value = "";
+      attachementLoad.value = false;
     });
+    // });
   });
 };
 
@@ -399,13 +409,19 @@ const openInTab = (args) => {
               placeholder="Write a message"
             />
             <div class="action">
-              <FileUpload
-                mode="basic"
+              <Button
+                type="button"
                 icon="pi pi-paperclip"
                 class="send-btn"
-                @select="onSelectedFiles"
-              >
-              </FileUpload>
+                :loading="attachementLoad"
+                @click="uploadAttachment"
+              />
+              <input
+                type="file"
+                style="display: none"
+                ref="fileInput"
+                @change="onSelectedFiles"
+              />
               <Button
                 icon="pi pi-send"
                 class="send-btn"
@@ -656,7 +672,7 @@ const openInTab = (args) => {
 
 .send-btn {
   width: 60px;
-  margin: 0px 15px;
+  margin: 0px 10px;
   background-color: #3ba58a;
   border-radius: 50px;
   height: 60px;
