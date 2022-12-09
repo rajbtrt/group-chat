@@ -32,7 +32,7 @@ export default {
       query(collection(db, "chatroom"), where("groupCode", "==", groupCode))
     ).then((res) => {
       res.forEach((response) => {
-        const washingtonRef = doc(db, "chatroom", response.id);
+        const Ref = doc(db, "chatroom", response.id);
         updateDoc(washingtonRef, {
           groupMembers: arrayUnion(currentUser),
         });
@@ -54,14 +54,18 @@ export default {
   },
 
   // Update Group Details
-  updateGroup(groupID, groupDetails) {
-    updateDoc(doc(db, "chatroom", groupID), groupDetails)
-      .then((res) => {
-        console.log(res);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+  updateGroup(groupID, data) {
+    return updateDoc(doc(db, "chatroom", groupID), data);
+  },
+
+  // Update Group Details
+  updateSeenByField(groupID, data) {
+    const q = query(
+      collection(db, "chatroom"),
+      where("seenBy", "array-contains", data.uid)
+    );
+    console.log(getDocs(q));
+    return updateDoc(doc(db, "chatroom", groupID), data);
   },
 
   // Delete Group

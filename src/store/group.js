@@ -59,6 +59,32 @@ export const useGroupStore = defineStore({
       });
     },
 
+    async updateGroup(groupID, data) {
+      return new Promise((resolve) => {
+        groupService
+          .updateGroup(groupID, data)
+          .then((res) => {
+            resolve(res);
+          })
+          .catch(({ response }) => {
+            this.errors = response;
+          });
+      });
+    },
+
+    async updateSeenByField(groupID, data) {
+      return new Promise((resolve) => {
+        groupService
+          .updateSeenByField(groupID, data)
+          .then((res) => {
+            resolve(res);
+          })
+          .catch(({ response }) => {
+            this.errors = response;
+          });
+      });
+    },
+
     async deleteRoom(groupID) {
       return new Promise((resolve) => {
         groupService

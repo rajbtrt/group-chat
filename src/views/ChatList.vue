@@ -143,7 +143,7 @@ const createGroup = () => {
 const joinGroup = () => {
   group.joinGroup(groupCode.value, getCurrentUser.value.uid).then(() => {
     closeJoinGroupPopup();
-  }); 
+  });
 };
 
 const createGroupPopup = () => {
@@ -170,8 +170,13 @@ const getGroupDetails = () => {
   });
 };
 
-const selectGroup = (arg) => {
-  groupSelected.value = arg;
+const selectGroup = (args) => {
+  // console.log(args);
+  // group.updateSeenByField(args.id, {
+  //   lastSeen: new Date().getTime(),
+  //   uid: getCurrentUser.value.uid,
+  // });
+  groupSelected.value = args;
   message.fetchAllMessageOfGroup(groupSelected.value.id);
   message.getNewMessage(groupSelected.value.id);
   getGroupDetails();
@@ -234,6 +239,12 @@ const onSelectedFiles = (event) => {
 const openInTab = (args) => {
   window.open(args, "_blank");
 };
+
+// const seenMessage = (args) => {
+//   const data = groupSelected.value.SeenBy.every((res) => res.lastSeen <= args);
+//   console.log(data);
+//   return data;
+// };
 </script>
 
 <template>
@@ -397,6 +408,7 @@ const openInTab = (args) => {
                   ]"
                 >
                   <span>{{ item.messageText }}</span>
+                  <!-- <span>{{ seenMessage(item.sentAt) }}</span> -->
                 </div>
               </div>
             </template>
