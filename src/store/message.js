@@ -13,6 +13,7 @@ export const useMessageStore = defineStore({
   state: () => ({
     errors: null,
     groupMessage: [],
+    groupMessageCount: 0,
   }),
   getters: {
     getGroupMessage(state) {
@@ -27,7 +28,7 @@ export const useMessageStore = defineStore({
           });
         }
       });
-      return state.groupMessage;
+      return [...new Map(state.groupMessage.map((m) => [m.id, m])).values()];
     },
   },
   actions: {
@@ -38,6 +39,7 @@ export const useMessageStore = defineStore({
           .getAllMessageOfGroup(groupID)
           .then((doc) => {
             doc.forEach((res) => {
+              console.log("Fetch CAll");
               this.groupMessage.push({ id: res.id, ...res.data() });
               resolve(res);
             });
@@ -67,12 +69,25 @@ export const useMessageStore = defineStore({
         onSnapshot(q, (querySnapshot) => {
           if (querySnapshot.docChanges().length <= 1) {
             querySnapshot.docChanges().forEach((res) => {
-              console.log(this.groupMessage)
               this.groupMessage.unshift({ id: res.doc.id, ...res.doc.data() });
-              console.log(this.groupMessage)
+              console.log("New CAll");
             });
           }
         });
+      });
+    },
+
+    async fetchCountMessageOfGroup(groupID) {
+      return new Promise((resolve) => {
+        messageService
+          .getMessageCountOfGroup(groupID)
+          .then((doc) => {
+              this.groupMessageCount = doc._data.count
+              resolve(doc._data.count);
+          })
+          .catch(({ response }) => {
+            this.errors = response;
+          });
       });
     },
 

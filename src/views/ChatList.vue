@@ -8,8 +8,6 @@ import {
   MultiSelect,
   Toast,
   Menu,
-  FileUpload,
-  SpeedDial,
 } from "../components";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../store/auth";
@@ -18,6 +16,7 @@ import { useUserStore } from "../store/user";
 import { useMessageStore } from "../store/message";
 import { reactive, ref, onMounted, computed } from "vue";
 import { useToast } from "primevue/usetoast";
+import { copyText } from "vue3-clipboard";
 
 const toast = useToast();
 const router = useRouter();
@@ -34,19 +33,25 @@ const searchText = ref();
 let groupSelected = ref();
 const displayCreateGroupModal = ref(false);
 const displayJoinGroupModel = ref(false);
+const boxRef = ref();
+let reachedTop = ref(false);
+const copyContainer = ref(null);
 let form = reactive({
   groupName: "",
   groupMembers: [],
   groupAdmin: "",
   createDate: new Date().getTime(),
   groupCode: "",
+  seenBy: {},
 });
 let groupCode = ref("");
 let groupMemberName = ref();
+const getMessageCount = computed(() => message.groupMessageCount);
 const getAllRoom = computed(() => group.getAllGroup);
 const getCurrentUser = computed(() => user.getCurrentUser);
 const getGroupMessages = computed(() => message.getGroupMessage);
 const getGroupMemebers = computed(() => user.getGroupMembersDetails);
+const lastSeen = computed(() => group.lastSeen);
 const userListToAddGroupMember = computed(() =>
   user.getUserslist.filter((res) => res.uid !== getCurrentUser.value.uid)
 );
@@ -88,12 +93,24 @@ const logout = () => {
 };
 
 onMounted(() => {
-  // group.fetchAllGroup();
   user.fetchCurrentUser().then(() => {
     group.fetchGroup(getCurrentUser.value.uid);
+    group.fetchNewGroup(getCurrentUser.value.uid);
   });
   user.fetchAllUsers();
 });
+
+const handleScroll = (e) => {
+  // console.log(e.srcElement.scrollHeight - e.srcElement.clientHeight);
+  // console.log(boxRef.value.scrollTop)
+
+  if (
+    Math.abs(boxRef.value.scrollTop) ===
+    e.srcElement.scrollHeight - e.srcElement.clientHeight
+  ) {
+    reachedTop.value = true;
+  }
+};
 
 const items = ref([
   {
@@ -131,11 +148,16 @@ const createGroup = () => {
   getCurrentUser.value.admin = true;
   form.groupCode = makeid(10);
   form.groupMembers.push(getCurrentUser.value.uid);
+  form.seenBy = {
+    lastSeen: new Date().getTime(),
+    uid: getCurrentUser.value.uid,
+  };
   group.createGroup(form).then(() => {
     form.groupAdmin = "";
     form.groupName = "";
     form.groupMembers = [];
     form.createDate = "";
+    form.seenBy = {};
     closeCreateGroupPopup();
   });
 };
@@ -171,14 +193,15 @@ const getGroupDetails = () => {
 };
 
 const selectGroup = (args) => {
-  // console.log(args);
-  // group.updateSeenByField(args.id, {
-  //   lastSeen: new Date().getTime(),
-  //   uid: getCurrentUser.value.uid,
-  // });
+  group.updateSeenByField(args.id, {
+    lastSeen: new Date().getTime(),
+    uid: getCurrentUser.value.uid,
+  });
   groupSelected.value = args;
   message.fetchAllMessageOfGroup(groupSelected.value.id);
   message.getNewMessage(groupSelected.value.id);
+  message.fetchCountMessageOfGroup(groupSelected.value.id);
+  group.fetchlastSeen(groupSelected.value.id);
   getGroupDetails();
 };
 
@@ -210,7 +233,11 @@ const getMessageAvatar = (id) => {
 };
 
 const loadNewMessage = (arg) => {
-  message.getLoadMessage(arg.id, getGroupMessages.value.slice(-1)[0].id);
+  message
+    .getLoadMessage(arg.id, getGroupMessages.value.slice(-1)[0].id)
+    .then(() => {
+      reachedTop.value = false;
+    });
 };
 
 const uploadAttachment = (args) => {
@@ -219,8 +246,6 @@ const uploadAttachment = (args) => {
 };
 
 const onSelectedFiles = (event) => {
-  console.log(event.target.files);
-  // event.target.files.forEach((file) => {
   message.UploadImage(event.target.files[0]).then((res) => {
     let chatDetails = {
       messageText: res.metadata.fullPath,
@@ -232,7 +257,6 @@ const onSelectedFiles = (event) => {
       chatMessage.value = "";
       attachementLoad.value = false;
     });
-    // });
   });
 };
 
@@ -240,11 +264,25 @@ const openInTab = (args) => {
   window.open(args, "_blank");
 };
 
-// const seenMessage = (args) => {
-//   const data = groupSelected.value.SeenBy.every((res) => res.lastSeen <= args);
-//   console.log(data);
-//   return data;
-// };
+const copyGroupCode = (args) => {
+  copyText(args, undefined, (error, event) => {
+    if (error) {
+      // alert("Can not copy");
+      console.log(error);
+    } else {
+      // alert("Copied");
+      console.log(event);
+    }
+  });
+};
+
+const seenMessage = (args) => {
+  console.log(args);
+  const data = lastSeen.value.every((res) => {
+    console.log(res, "LASTSEEN")
+    res.lastSeen <= args});
+  return data;
+};
 </script>
 
 <template>
@@ -305,16 +343,24 @@ const openInTab = (args) => {
           />
           <div class="chatroom-list-info">
             <h3>
-              {{ groupSelected?.groupName }} {{ groupSelected?.groupCode }}
+              {{ groupSelected?.groupName }}
             </h3>
+            <div class="copy-chip">
+              {{ groupSelected?.groupCode }}
+              <Button
+                icon="pi pi-copy"
+                class="copy-btn"
+                @click="copyGroupCode(groupSelected?.groupCode)"
+              />
+            </div>
             <span>{{ groupMemberName }}</span>
           </div>
           <Button icon="pi pi-plus" class="add-btn" />
-          <!-- <Button icon="pi pi-sign-out" class="remove-btn" /> -->
         </div>
 
         <div class="chatroom-container">
           <Button
+            v-if="reachedTop && !(getGroupMessages.length >= getMessageCount)"
             type="button"
             label="Load messages"
             icon="pi pi-arrow-up"
@@ -322,7 +368,7 @@ const openInTab = (args) => {
             @click="loadNewMessage(groupSelected, getGroupMessages)"
             class="p-button-sm load-msg-btn"
           />
-          <div class="chat-box-container">
+          <div ref="boxRef" class="chat-box-container" @scroll="handleScroll">
             <template v-for="item in getGroupMessages">
               <div
                 :class="[
@@ -408,6 +454,22 @@ const openInTab = (args) => {
                   ]"
                 >
                   <span>{{ item.messageText }}</span>
+                  <div v-if="item.sentBy === getCurrentUser.uid">
+                    <img
+                      v-if="seenMessage(item.sentAt) === false"
+                      src="../assets/unseen.png"
+                      width="20"
+                      alt="unseen"
+                      class="tick"
+                    />
+                    <img
+                      v-if="seenMessage(item.sentAt) === true"
+                      src="../assets/seen.png"
+                      width="20"
+                      alt="seen"
+                      class="tick"
+                    />
+                  </div>
                   <!-- <span>{{ seenMessage(item.sentAt) }}</span> -->
                 </div>
               </div>
@@ -601,6 +663,27 @@ const openInTab = (args) => {
   font-size: 1rem !important;
 }
 
+.copy-chip {
+  background-color: #f7f7f7;
+  padding: 0 0 0 10px;
+  align-items: center;
+  display: flex;
+  border-radius: 40px;
+  width: fit-content;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.copy-btn {
+  width: 35px;
+  height: 35px;
+  border-radius: 17px;
+  margin-left: 10px;
+  background-color: #cecece;
+  border: none;
+  color: #000000;
+}
+
 .chatroom-list-info {
   flex: 5;
   margin: 5px 0 0 20px;
@@ -664,6 +747,11 @@ const openInTab = (args) => {
   margin: 5px 0 5px 15px;
   border-radius: 15px 15px 0 15px;
   width: fit-content;
+  display: flex;
+}
+
+.tick {
+  margin-left: 10px;
 }
 
 .write-box {

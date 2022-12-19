@@ -9,9 +9,11 @@ import {
   getFirestore,
   onSnapshot,
   getDocs,
+  getDoc,
   query,
   where,
   arrayUnion,
+  orderBy,
 } from "firebase/firestore";
 const db = getFirestore(firebaseInitConfig);
 
@@ -19,9 +21,7 @@ export default {
   // Create Group
   createGroup(groupDetails) {
     return addDoc(collection(db, "chatroom"), groupDetails)
-      .then((res) => {
-        console.log(res);
-      })
+      .then(() => {})
       .catch((error) => {
         console.log(error);
       });
@@ -41,16 +41,21 @@ export default {
   },
 
   // Get All Rooms
-  getAllGroup() {
+  readAllGroup() {
     return getDocs(collection(db, "chatroom"));
   },
 
-  getGroup(userID) {
+  readGroup(userID) {
     const q = query(
       collection(db, "chatroom"),
       where("groupMembers", "array-contains", userID)
     );
-    return getDocs(q);
+    return new Promise((resolve) => {
+      onSnapshot(q, (querySnapshot) => {
+        // console.log(querySnapshot);
+        resolve(querySnapshot);
+      });
+    });
   },
 
   // Update Group Details
@@ -60,12 +65,13 @@ export default {
 
   // Update Group Details
   updateSeenByField(groupID, data) {
-    const q = query(
-      collection(db, "chatroom"),
-      where("seenBy", "array-contains", data.uid)
-    );
-    console.log(getDocs(q));
-    return updateDoc(doc(db, "chatroom", groupID), data);
+    const q = doc(db, "chatroom", groupID, "seen", data.uid);
+    return setDoc(q, { lastSeen: data.lastSeen });
+  },
+
+  readLastSeen(groupID) {
+    const q = collection(db, "chatroom", groupID, "seen");
+    return getDocs(q);
   },
 
   // Delete Group

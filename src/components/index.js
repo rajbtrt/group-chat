@@ -9,6 +9,7 @@ import Toast from "primevue/toast";
 import Menu from "primevue/menu";
 import FileUpload from "primevue/fileupload";
 import SpeedDial from "primevue/speeddial";
+import Chip from "primevue/chip";
 
 export {
   InputText,
@@ -22,4 +23,5 @@ export {
   Menu,
   FileUpload,
   SpeedDial,
+  Chip,
 };
