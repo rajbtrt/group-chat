@@ -6,6 +6,7 @@ import { firebaseInitConfig } from "./helpers/firebaseConfig";
 import App from "./App.vue";
 import ConfirmationService from "primevue/confirmationservice";
 import ToastService from "primevue/toastservice";
+import VueClipboard from "vue3-clipboard";
 import router from "./router";
 const pinia = createPinia();
 export const app = createApp(App);
@@ -18,5 +19,6 @@ app.use(pinia);
 app.use(ToastService);
 app.use(ConfirmationService);
 app.use(router);
+app.use(VueClipboard, { autoSetContainer: true, appendToBody: true });
 
 app.mount("#app");

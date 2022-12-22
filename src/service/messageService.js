@@ -6,6 +6,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  getCountFromServer,
   getFirestore,
   onSnapshot,
   getDoc,
@@ -46,6 +47,14 @@ export default {
       onSnapshot(q, (querySnapshot) => {
         resolve(querySnapshot);
       });
+    });
+  },
+
+  getMessageCountOfGroup(groupID) {
+    const q = collection(db, "messages", groupID, "message");
+    return new Promise((resolve) => {
+      const data = getCountFromServer(q);
+      resolve(data);
     });
   },
 
